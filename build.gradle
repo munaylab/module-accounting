@@ -1,0 +1,78 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        maven { url "https://repo.grails.org/grails/core" }
+    }
+    dependencies {
+        classpath "org.grails:grails-gradle-plugin:$grailsVersion"
+    }
+}
+
+version "0.1"
+group "munaylab.balance"
+
+apply plugin:"eclipse"
+apply plugin:"idea"
+apply plugin:"org.grails.grails-plugin"
+apply plugin:"org.grails.grails-plugin-publish"
+
+repositories {
+    mavenLocal()
+    maven { url "https://repo.grails.org/grails/core" }
+}
+
+dependencies {
+    compile "org.springframework.boot:spring-boot-starter-logging"
+    compile "org.springframework.boot:spring-boot-autoconfigure"
+    compile "org.grails:grails-core"
+    console "org.grails:grails-console"
+    profile "org.grails.profiles:plugin"
+    provided "org.grails:grails-plugin-services"
+    provided "org.grails:grails-plugin-domain-class"
+    testCompile "org.grails:grails-gorm-testing-support"
+    testCompile "org.grails:grails-plugin-testing"
+}
+
+bootRun {
+    jvmArgs('-Dspring.output.ansi.enabled=always')
+    addResources = true
+}
+// enable if you wish to package this plugin as a standalone application
+bootRepackage.enabled = false
+grailsPublish {
+    user = 'team@munaylab.org'
+    key = 'key'
+    githubSlug = 'foo/bar'
+    license {
+        name = 'Apache-2.0'
+    }
+    title = "MunayLab Balance"
+    desc = "MunayLab Balance Plugin"
+    developers = [team:"MunayLab Team"]
+}
+
+grails {
+    plugins {
+        compile project(':munaylab-core')
+    }
+}
+
+test {
+    testLogging.exceptionFormat = 'full'
+    // testLogging.showStandardStreams = true
+    beforeTest { descriptor ->
+        String fullClassName = descriptor.className
+        String className = fullClassName.substring(fullClassName.indexOf('munaylab.') + 9)
+        print "Testing: [${className.replace('Spec', '')}] - ${descriptor.name}"
+    }
+    afterTest { descriptor, result ->
+        String RED = '\u001B[31m'
+        String RESET = '\u001B[0m'
+        String GREEN = '\u001B[32m'
+        if (result.resultType == TestResult.ResultType.SUCCESS) {
+            println "$GREEN \u2714 $RESET"
+        } else {
+            println "$RED \u2716 $RESET"
+        }
+    }
+}
