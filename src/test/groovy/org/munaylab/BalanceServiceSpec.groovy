@@ -127,9 +127,9 @@ class BalanceServiceSpec extends Specification
         Asiento.countByEnabled(false) == 1
         Categoria.count() == 1
     }
-    /*void 'crear categoria'() {
+    void 'crear categoria'() {
         given:
-        def command = Builder.asiento.categoriaCommand.crearCategoriaIngreso('categoria', 'detalle')
+        def command = new CategoriaCommand(DATOS_CATEGORIA_INGRESO)
         when:
         service.actualizarCategoria(command)
         then:
@@ -137,8 +137,9 @@ class BalanceServiceSpec extends Specification
     }
     void 'crear subcategoria'() {
         given:
-        Builder.asiento.crearCategoriaIngreso('categoria').save(flush: true)
-        def command = Builder.asiento.categoriaCommand.crearCategoriaIngreso('subcategoria', 'detalle')
+        new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
+        def command = new CategoriaCommand(DATOS_CATEGORIA_INGRESO_MODIFICADO)
+        command.id = null
         command.idCategoriaPadre = 1
         when:
         def categoria = service.actualizarCategoria(command)
@@ -148,9 +149,8 @@ class BalanceServiceSpec extends Specification
     }
     void 'modificar categoria'() {
         given:
-        Builder.asiento.crearCategoriaIngreso('categoria').save(flush: true)
-        def command = Builder.asiento.categoriaCommand.crearCategoriaIngreso('modificado', 'detalle...')
-        command.id = 1
+        new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
+        def command = new CategoriaCommand(DATOS_CATEGORIA_INGRESO_MODIFICADO)
         when:
         def categoria = service.actualizarCategoria(command)
         then:
@@ -162,9 +162,15 @@ class BalanceServiceSpec extends Specification
     }
     void 'obtener categorias de egresos'() {
         given:
-        def categoria = Builder.asiento.crearCategoriaEgreso('egreso')
+        def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
         5.times {
-            categoria.addToSubcategorias(Builder.asiento.crearCategoriaEgreso("subcategoria $it"))
+            def subcategoria = new Categoria().with {
+                nombre  = "subcategoria $it"
+                detalle = "subcategoria detalle"
+                tipo    = TipoAsiento.EGRESO
+                it
+            }
+            categoria.addToSubcategorias(subcategoria)
         }
         categoria.save(flush: true)
         when:
@@ -175,9 +181,15 @@ class BalanceServiceSpec extends Specification
     }
     void 'obtener categorias de ingresos'() {
         given:
-        def categoria = Builder.asiento.crearCategoriaIngreso('ingreso')
+        def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
         5.times {
-            categoria.addToSubcategorias(Builder.asiento.crearCategoriaIngreso("subcategoria $it"))
+            def subcategoria = new Categoria().with {
+                nombre  = "subcategoria $it"
+                detalle = "subcategoria detalle"
+                tipo    = TipoAsiento.INGRESO
+                it
+            }
+            categoria.addToSubcategorias(subcategoria)
         }
         categoria.save(flush: true)
         when:
@@ -185,7 +197,7 @@ class BalanceServiceSpec extends Specification
         then:
         categorias.size() == 1
         categorias.first().subcategorias.size() == 5
-    }*/
+    }
 
     /* Metodo groupProperty no funciona en unit test
     void 'calcular balance sin fechas'() {
@@ -222,45 +234,57 @@ class BalanceServiceSpec extends Specification
         [90.0, new Date() -1] | [50.0, new Date() -1]  | -40.0 | new Date() -2 | new Date() -1
     }
     */
-    /*void crearAsientos(org, categoria, tipo, values) {
-        values.each {
-            Builder.asiento.conFecha(new Date()).conMonto(it).conDetalle('asiento')
-                .conCategoria(categoria).conOrganizacion(org).deTipo(tipo)
-                .crear.save(flush: true, failOnError: true)
+    void crearAsientos(org, _categoria, tipoAsiento, values) {
+        values.each { valor ->
+            new Asiento().with {
+                fecha           = new Date()
+                detalle         = 'asiento'
+                tipo            = tipoAsiento
+                categoria       = _categoria
+                organizacion    = org
+                monto           = valor
+                it
+            }.save(flush: true, failOnError: true)
         }
     }
-    void crearAsientosConFechas(org, categoria, tipo, value) {
-        Builder.asiento.conFecha(value[1]).conMonto(value[0]).conDetalle('asiento')
-            .conCategoria(categoria).conOrganizacion(org).deTipo(tipo)
-            .crear.save(flush: true, failOnError: true)
+    void crearAsientosConFechas(org, _categoria, tipoAsiento, value) {
+        new Asiento().with {
+            fecha           = value[1]
+            detalle         = 'asiento'
+            tipo            = tipoAsiento
+            categoria       = _categoria
+            organizacion    = org
+            monto           = value[0]
+            it
+        }.save(flush: true, failOnError: true)
     }
 
     void 'obtener egresos'() {
         given:
-        def org = Builder.organizacion.conDatos(DATOS_ORG_VERIFICADA).crear.save(flush: true, failOnError: true)
-        def categoria = Builder.asiento.crearCategoriaEgreso('nueva categoria').save(flush: true, failOnError: true)
+        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+        def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
         crearAsientos(org, categoria, TipoAsiento.EGRESO, [10.0, 20.0, 30.0, 40.0])
         when:
-        def list = service.obtenerEgresos(org, 'nueva categoria', new Date() -1, new Date() + 1)
+        def list = service.obtenerEgresos(org, categoria.nombre, new Date() -1, new Date() + 1)
         then:
         list.size() == 4
     }
     void 'obtener egresos de una categoria'() {
         given:
-        def org = Builder.organizacion.conDatos(DATOS_ORG_VERIFICADA).crear.save(flush: true)
-        def categoria = Builder.asiento.crearCategoriaEgreso('categoria').save(flush: true)
-        def otraCategoria = Builder.asiento.crearCategoriaEgreso('otro egreso').save(flush: true)
+        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+        def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
+        def otraCategoria = new Categoria(DATOS_CATEGORIA_EGRESO_MODIFICADO).save(flush: true)
         crearAsientos(org, categoria, TipoAsiento.EGRESO, [10.0, 20.0, 30.0, 40.0])
         crearAsientos(org, otraCategoria, TipoAsiento.EGRESO, [10.0, 20.0, 30.0, 40.0])
         when:
-        def list = service.obtenerEgresos(org, 'categoria')
+        def list = service.obtenerEgresos(org, otraCategoria.nombre)
         then:
         list.size() == 4
     }
     void 'obtener egresos entre fechas'() {
         given:
-        def org = Builder.organizacion.conDatos(DATOS_ORG_VERIFICADA).crear.save(flush: true)
-        def categoria = Builder.asiento.crearCategoriaEgreso('categoria').save(flush: true)
+        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+        def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
         crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, egreso)
         crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, egreso)
         crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, otroEgreso)
@@ -274,14 +298,14 @@ class BalanceServiceSpec extends Specification
     }
     void 'obtener egresos de categoria entre fechas'() {
         given:
-        def org = Builder.organizacion.conDatos(DATOS_ORG_VERIFICADA).crear.save(flush: true)
-        def categoria = Builder.asiento.crearCategoriaEgreso('categoria').save(flush: true)
-        def otraCategoria = Builder.asiento.crearCategoriaEgreso('otra categoria').save(flush: true)
+        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+        def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
+        def otraCategoria = new Categoria(DATOS_CATEGORIA_EGRESO_MODIFICADO).save(flush: true)
         crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, egreso)
         crearAsientosConFechas(org, otraCategoria, TipoAsiento.EGRESO, egreso)
         crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, otroEgreso)
         when:
-        def list = service.obtenerEgresosDeCategoriaEntre(org, 'categoria', new Date() -1, new Date() +1)
+        def list = service.obtenerEgresosDeCategoriaEntre(org, categoria.nombre, new Date() -1, new Date() +1)
         then:
         list.size() == 1
         where:
@@ -290,30 +314,30 @@ class BalanceServiceSpec extends Specification
     }
     void 'obtener ingresos'() {
         given:
-        def org = Builder.organizacion.conDatos(DATOS_ORG_VERIFICADA).crear.save(flush: true)
-        def categoria = Builder.asiento.crearCategoriaIngreso('categoria').save(flush: true)
+        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+        def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
         crearAsientos(org, categoria, TipoAsiento.INGRESO, [10.0, 20.0, 30.0, 40.0])
         when:
-        def list = service.obtenerIngresos(org, 'categoria', new Date(), new Date() + 1)
+        def list = service.obtenerIngresos(org, categoria.nombre, new Date(), new Date() + 1)
         then:
         list.size() == 4
     }
     void 'obtener ingresos de una categoria'() {
         given:
-        def org = Builder.organizacion.conDatos(DATOS_ORG_VERIFICADA).crear.save(flush: true)
-        def categoria = Builder.asiento.crearCategoriaIngreso('categoria').save(flush: true)
-        def otraCategoria = Builder.asiento.crearCategoriaIngreso('otra categoria').save(flush: true)
+        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+        def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
+        def otraCategoria = new Categoria(DATOS_CATEGORIA_INGRESO_MODIFICADO).save(flush: true)
         crearAsientos(org, categoria, TipoAsiento.INGRESO, [10.0, 20.0, 30.0, 40.0])
         crearAsientos(org, otraCategoria, TipoAsiento.INGRESO, [10.0, 20.0, 30.0, 40.0])
         when:
-        def list = service.obtenerIngresos(org, 'categoria')
+        def list = service.obtenerIngresos(org, categoria.nombre)
         then:
         list.size() == 4
     }
     void 'obtener ingresos entre fechas'() {
         given:
-        def org = Builder.organizacion.conDatos(DATOS_ORG_VERIFICADA).crear.save(flush: true)
-        def categoria = Builder.asiento.crearCategoriaIngreso('categoria').save(flush: true)
+        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+        def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
         crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, ingreso)
         crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, ingreso)
         crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, otroIngreso)
@@ -327,20 +351,20 @@ class BalanceServiceSpec extends Specification
     }
     void 'obtener ingresos de categoria entre fechas'() {
         given:
-        def org = Builder.organizacion.conDatos(DATOS_ORG_VERIFICADA).crear.save(flush: true)
-        def categoria = Builder.asiento.crearCategoriaIngreso('categoria').save(flush: true)
-        def otraCategoria = Builder.asiento.crearCategoriaIngreso('otra categoria').save(flush: true)
+        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+        def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
+        def otraCategoria = new Categoria(DATOS_CATEGORIA_INGRESO_MODIFICADO).save(flush: true)
         crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, ingreso)
         crearAsientosConFechas(org, otraCategoria, TipoAsiento.INGRESO, ingreso)
         crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, otroIngreso)
         when:
-        def list = service.obtenerIngresosDeCategoriaEntre(org, 'categoria', new Date() -1, new Date() +1)
+        def list = service.obtenerIngresosDeCategoriaEntre(org, categoria.nombre, new Date() -1, new Date() +1)
         then:
         list.size() == 1
         where:
         ingreso               | otroIngreso
         [40.0, new Date() -1] | [30.0, new Date() -3]
-    }*/
+    }
     /*void 'obtener reporte de ingresos mensual'() {
         given:
         def org = Builder.crearOrganizacionConDatos().save(flush: true)
