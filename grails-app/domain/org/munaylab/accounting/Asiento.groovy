@@ -1,9 +1,8 @@
 package org.munaylab.accounting
 
-import org.munaylab.osc.Organizacion
-
 class Asiento {
 
+    Long idEntity
     Date fecha
     Double monto
     String detalle
@@ -12,7 +11,6 @@ class Asiento {
     TipoAsiento tipo
     Categoria categoria
     Programable programable
-    Organizacion organizacion
     Integer semana = 0
     Integer mes = 0
     Integer anio = 0

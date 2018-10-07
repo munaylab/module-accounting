@@ -1,2 +1,0 @@
-include 'module-core'
-project(':module-core').projectDir = new File('../module-core')

@@ -5,199 +5,207 @@ import org.munaylab.accounting.CategoriaCommand
 import org.munaylab.accounting.Asiento
 import org.munaylab.accounting.AsientoCommand
 import org.munaylab.accounting.TipoAsiento
-import org.munaylab.osc.Organizacion
 
 import grails.testing.gorm.DataTest
 import grails.testing.services.ServiceUnitTest
 import spock.lang.Specification
 
-class BalanceServiceSpec extends Specification
-        implements ServiceUnitTest<BalanceService>, DataTest, UnitTestService {
+class BalanceServiceSpec extends UnitTestBuilder
+        implements ServiceUnitTest<BalanceService>, DataTest {
 
     void setupSpec() {
         mockDomains Asiento, Categoria
     }
 
-    void 'agregar egreso'() {
+    void 'obtener nuevo egreso desde un command'() {
         given:
-        new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+        def command = crearAsientoCommandConDatos(EJEMPLO_DE_EGRESO)
+        when:
+        def egreso = service.obtenerAsientoDeCommand(command)
+        then:
+        comprobarQueAsientoYCommandSonIguales(egreso, command)
+    }
+
+    void 'obtener egreso existente desde un command'() {
+        given:
+        crearAsientoConDatos(EJEMPLO_DE_EGRESO, EJEMPLO_DE_CATEGORIA_EGRESO).save()
         and:
-        def command = crearCommand(DATOS_EGRESO, DATOS_CATEGORIA_EGRESO)
+        def command = crearAsientoCommandConDatos(EJEMPLO_DE_EGRESO + [id: 1])
+        when:
+        def egreso = service.obtenerAsientoDeCommand(command)
+        then:
+        comprobarQueAsientoYCommandSonIguales(egreso, command)
+    }
+
+    void 'agregar un nuevo egreso con una nueva categoria'() {
+        given:
+        def command = crearAsientoCommandConDatos(EJEMPLO_DE_EGRESO, EJEMPLO_DE_CATEGORIA_EGRESO)
         when:
         def egreso = service.actualizarAsiento(command)
         then:
-        egreso != null && Asiento.countByEnabled(true) == 1
-        Categoria.count() == 1
+        comprobarQueElAsientoSeGuardo(egreso)
     }
-    void 'modificar egreso'() {
-        given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-        def categoriaEgreso = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
-        def egreso = new Asiento(DATOS_EGRESO).with {
-            tipo            = TipoAsiento.EGRESO
-            categoria       = categoriaEgreso
-            organizacion    = org
-            it
-        }.save(flush: true)
-        and:
-        def command = crearCommand(DATOS_EGRESO_MODIFICADO, DATOS_CATEGORIA_EGRESO_MODIFICADO)
-        command.id = egreso.id
-        command.categoria.id = categoriaEgreso.id
-        when:
-        egreso = service.actualizarAsiento(command)
-        then:
-        egreso != null && Asiento.countByEnabled(true) == 1
-        egreso.monto == command.monto && Asiento.get(1).monto == command.monto
-        egreso.detalle == command.detalle && Asiento.get(1).detalle == command.detalle
-        Categoria.count() == 1
-    }
-    private Asiento crearEgreso() {
 
-    }
-    AsientoCommand crearCommand(datos, datosCategoria) {
-        def command = new AsientoCommand(datos)
-        command.id = datos.id
-        command.categoria = new CategoriaCommand(datosCategoria)
-        command.categoria.id = datosCategoria.id
-        command
-    }
-    void 'cancelar egreso'() {
+    void 'agregar un nuevo egreso con una categoria existente'() {
         given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-        def categoriaEgreso = new Categoria(DATOS_CATEGORIA_EGRESO)
-        def egreso = new Asiento(DATOS_EGRESO).with {
-            tipo            = TipoAsiento.EGRESO
-            categoria       = categoriaEgreso
-            organizacion    = org
-            it
-        }.save(flush: true)
-        when:
-        service.cancelarAsiento(egreso.id)
-        then:
-        Asiento.countByEnabled(true) == 0
-        Asiento.countByEnabled(false) == 1
-        Categoria.count() == 1
-    }
-    void 'agregar ingreso'() {
-        given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+        crearCategoriaConDatos(EJEMPLO_DE_CATEGORIA_EGRESO).save(failOnError: true)
         and:
-        def command = crearCommand(DATOS_INGRESO, DATOS_CATEGORIA_INGRESO)
+        def command = crearAsientoCommandConDatos(EJEMPLO_DE_EGRESO, [id: 1])
         when:
-        def ingreso = service.actualizarAsiento(command)
+        def egreso = service.actualizarAsiento(command)
         then:
-        ingreso != null && Asiento.countByEnabled(true) == 1
-        Categoria.count() == 1
+        comprobarQueElAsientoSeGuardo(egreso)
     }
-    void 'modificar ingreso'() {
+
+    void 'modificar un egreso existente'() {
         given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-        def categoriaIngreso = new Categoria(DATOS_CATEGORIA_INGRESO)
-        def ingreso = new Asiento(DATOS_INGRESO).with {
-            tipo            = TipoAsiento.INGRESO
-            categoria       = categoriaIngreso
-            organizacion    = org
-            it
-        }.save(flush: true)
-        and:
-        def command = crearCommand(DATOS_INGRESO_MODIFICADO, DATOS_CATEGORIA_INGRESO_MODIFICADO)
+        crearAsientoConDatos(EJEMPLO_DE_EGRESO, EJEMPLO_DE_CATEGORIA_EGRESO).save()
+        def command = crearAsientoCommandConDatos(EJEMPLO_DE_EGRESO_MODIFICADO + [id: 1], [id: 1])
         when:
-        ingreso = service.actualizarAsiento(command)
+        def egresoModificado = service.actualizarAsiento(command)
         then:
-        assert ingreso.enabled == true
-        ingreso != null && Asiento.countByEnabled(true) == 1
-        ingreso.monto == command.monto && Asiento.get(1).monto == command.monto
-        ingreso.detalle == command.detalle && Asiento.get(1).detalle == command.detalle
-        Categoria.count() == 1
+        comprobarQueElAsientoSeGuardo(egresoModificado)
+        comprobarQueElAsientoSeModifico(egresoModificado, EJEMPLO_DE_EGRESO)
+        Asiento.count() == 1
     }
-    void 'cancelar ingreso'() {
-        given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-        def categoriaIngreso = new Categoria(DATOS_CATEGORIA_INGRESO)
-        def ingreso = new Asiento(DATOS_INGRESO).with {
-            tipo            = TipoAsiento.INGRESO
-            categoria       = categoriaIngreso
-            organizacion    = org
-            it
-        }.save(flush: true)
-        when:
-        service.cancelarAsiento(ingreso.id)
-        then:
-        Asiento.countByEnabled(true) == 0
-        Asiento.countByEnabled(false) == 1
-        Categoria.count() == 1
-    }
-    void 'crear categoria'() {
-        given:
-        def command = new CategoriaCommand(DATOS_CATEGORIA_INGRESO)
-        when:
-        service.actualizarCategoria(command)
-        then:
-        Categoria.count() == 1
-    }
-    void 'crear subcategoria'() {
-        given:
-        new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
-        def command = new CategoriaCommand(DATOS_CATEGORIA_INGRESO_MODIFICADO)
-        command.id = null
-        command.idCategoriaPadre = 1
-        when:
-        def categoria = service.actualizarCategoria(command)
-        then:
-        categoria != null && Categoria.count() == 2
-        Categoria.get(1).subcategorias.size() == 1
-    }
-    void 'modificar categoria'() {
-        given:
-        new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
-        def command = new CategoriaCommand(DATOS_CATEGORIA_INGRESO_MODIFICADO)
-        when:
-        def categoria = service.actualizarCategoria(command)
-        then:
-        categoria != null && Categoria.count() == 1
-        categoria.nombre == command.nombre
-        categoria.detalle == command.detalle
-        Categoria.get(1).nombre == command.nombre
-        Categoria.get(1).detalle == command.detalle
-    }
-    void 'obtener categorias de egresos'() {
-        given:
-        def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
-        5.times {
-            def subcategoria = new Categoria().with {
-                nombre  = "subcategoria $it"
-                detalle = "subcategoria detalle"
-                tipo    = TipoAsiento.EGRESO
-                it
-            }
-            categoria.addToSubcategorias(subcategoria)
-        }
-        categoria.save(flush: true)
-        when:
-        def categorias = service.obtenerCategorias(TipoAsiento.EGRESO)
-        then:
-        categorias.size() == 1
-        categorias.first().subcategorias.size() == 5
-    }
-    void 'obtener categorias de ingresos'() {
-        given:
-        def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
-        5.times {
-            def subcategoria = new Categoria().with {
-                nombre  = "subcategoria $it"
-                detalle = "subcategoria detalle"
-                tipo    = TipoAsiento.INGRESO
-                it
-            }
-            categoria.addToSubcategorias(subcategoria)
-        }
-        categoria.save(flush: true)
-        when:
-        def categorias = service.obtenerCategorias(TipoAsiento.INGRESO)
-        then:
-        categorias.size() == 1
-        categorias.first().subcategorias.size() == 5
-    }
+
+    // void 'cancelar egreso'() {
+    //     given:
+    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+    //     def categoriaEgreso = new Categoria(DATOS_CATEGORIA_EGRESO)
+    //     def egreso = new Asiento(DATOS_EGRESO).with {
+    //         tipo            = TipoAsiento.EGRESO
+    //         categoria       = categoriaEgreso
+    //         organizacion    = org
+    //         it
+    //     }.save(flush: true)
+    //     when:
+    //     service.cancelarAsiento(egreso.id)
+    //     then:
+    //     Asiento.countByEnabled(true) == 0
+    //     Asiento.countByEnabled(false) == 1
+    //     Categoria.count() == 1
+    // }
+    // void 'agregar ingreso'() {
+    //     given:
+    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+    //     and:
+    //     def command = crearCommand(DATOS_INGRESO, DATOS_CATEGORIA_INGRESO)
+    //     when:
+    //     def ingreso = service.actualizarAsiento(command)
+    //     then:
+    //     ingreso != null && Asiento.countByEnabled(true) == 1
+    //     Categoria.count() == 1
+    // }
+    // void 'modificar ingreso'() {
+    //     given:
+    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+    //     def categoriaIngreso = new Categoria(DATOS_CATEGORIA_INGRESO)
+    //     def ingreso = new Asiento(DATOS_INGRESO).with {
+    //         tipo            = TipoAsiento.INGRESO
+    //         categoria       = categoriaIngreso
+    //         organizacion    = org
+    //         it
+    //     }.save(flush: true)
+    //     and:
+    //     def command = crearCommand(DATOS_INGRESO_MODIFICADO, DATOS_CATEGORIA_INGRESO_MODIFICADO)
+    //     when:
+    //     ingreso = service.actualizarAsiento(command)
+    //     then:
+    //     assert ingreso.enabled == true
+    //     ingreso != null && Asiento.countByEnabled(true) == 1
+    //     ingreso.monto == command.monto && Asiento.get(1).monto == command.monto
+    //     ingreso.detalle == command.detalle && Asiento.get(1).detalle == command.detalle
+    //     Categoria.count() == 1
+    // }
+    // void 'cancelar ingreso'() {
+    //     given:
+    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+    //     def categoriaIngreso = new Categoria(DATOS_CATEGORIA_INGRESO)
+    //     def ingreso = new Asiento(DATOS_INGRESO).with {
+    //         tipo            = TipoAsiento.INGRESO
+    //         categoria       = categoriaIngreso
+    //         organizacion    = org
+    //         it
+    //     }.save(flush: true)
+    //     when:
+    //     service.cancelarAsiento(ingreso.id)
+    //     then:
+    //     Asiento.countByEnabled(true) == 0
+    //     Asiento.countByEnabled(false) == 1
+    //     Categoria.count() == 1
+    // }
+    // void 'crear categoria'() {
+    //     given:
+    //     def command = new CategoriaCommand(DATOS_CATEGORIA_INGRESO)
+    //     when:
+    //     service.actualizarCategoria(command)
+    //     then:
+    //     Categoria.count() == 1
+    // }
+    // void 'crear subcategoria'() {
+    //     given:
+    //     new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
+    //     def command = new CategoriaCommand(DATOS_CATEGORIA_INGRESO_MODIFICADO)
+    //     command.id = null
+    //     command.idCategoriaPadre = 1
+    //     when:
+    //     def categoria = service.actualizarCategoria(command)
+    //     then:
+    //     categoria != null && Categoria.count() == 2
+    //     Categoria.get(1).subcategorias.size() == 1
+    // }
+    // void 'modificar categoria'() {
+    //     given:
+    //     new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
+    //     def command = new CategoriaCommand(DATOS_CATEGORIA_INGRESO_MODIFICADO)
+    //     when:
+    //     def categoria = service.actualizarCategoria(command)
+    //     then:
+    //     categoria != null && Categoria.count() == 1
+    //     categoria.nombre == command.nombre
+    //     categoria.detalle == command.detalle
+    //     Categoria.get(1).nombre == command.nombre
+    //     Categoria.get(1).detalle == command.detalle
+    // }
+    // void 'obtener categorias de egresos'() {
+    //     given:
+    //     def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
+    //     5.times {
+    //         def subcategoria = new Categoria().with {
+    //             nombre  = "subcategoria $it"
+    //             detalle = "subcategoria detalle"
+    //             tipo    = TipoAsiento.EGRESO
+    //             it
+    //         }
+    //         categoria.addToSubcategorias(subcategoria)
+    //     }
+    //     categoria.save(flush: true)
+    //     when:
+    //     def categorias = service.obtenerCategorias(TipoAsiento.EGRESO)
+    //     then:
+    //     categorias.size() == 1
+    //     categorias.first().subcategorias.size() == 5
+    // }
+    // void 'obtener categorias de ingresos'() {
+    //     given:
+    //     def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
+    //     5.times {
+    //         def subcategoria = new Categoria().with {
+    //             nombre  = "subcategoria $it"
+    //             detalle = "subcategoria detalle"
+    //             tipo    = TipoAsiento.INGRESO
+    //             it
+    //         }
+    //         categoria.addToSubcategorias(subcategoria)
+    //     }
+    //     categoria.save(flush: true)
+    //     when:
+    //     def categorias = service.obtenerCategorias(TipoAsiento.INGRESO)
+    //     then:
+    //     categorias.size() == 1
+    //     categorias.first().subcategorias.size() == 5
+    // }
 
     /* Metodo groupProperty no funciona en unit test
     void 'calcular balance sin fechas'() {
@@ -234,137 +242,137 @@ class BalanceServiceSpec extends Specification
         [90.0, new Date() -1] | [50.0, new Date() -1]  | -40.0 | new Date() -2 | new Date() -1
     }
     */
-    void crearAsientos(org, _categoria, tipoAsiento, values) {
-        values.each { valor ->
-            new Asiento().with {
-                fecha           = new Date()
-                detalle         = 'asiento'
-                tipo            = tipoAsiento
-                categoria       = _categoria
-                organizacion    = org
-                monto           = valor
-                it
-            }.save(flush: true, failOnError: true)
-        }
-    }
-    void crearAsientosConFechas(org, _categoria, tipoAsiento, value) {
-        new Asiento().with {
-            fecha           = value[1]
-            detalle         = 'asiento'
-            tipo            = tipoAsiento
-            categoria       = _categoria
-            organizacion    = org
-            monto           = value[0]
-            it
-        }.save(flush: true, failOnError: true)
-    }
-
-    void 'obtener egresos'() {
-        given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-        def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
-        crearAsientos(org, categoria, TipoAsiento.EGRESO, [10.0, 20.0, 30.0, 40.0])
-        when:
-        def list = service.obtenerEgresos(org, categoria.nombre, new Date() -1, new Date() + 1)
-        then:
-        list.size() == 4
-    }
-    void 'obtener egresos de una categoria'() {
-        given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-        def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
-        def otraCategoria = new Categoria(DATOS_CATEGORIA_EGRESO_MODIFICADO).save(flush: true)
-        crearAsientos(org, categoria, TipoAsiento.EGRESO, [10.0, 20.0, 30.0, 40.0])
-        crearAsientos(org, otraCategoria, TipoAsiento.EGRESO, [10.0, 20.0, 30.0, 40.0])
-        when:
-        def list = service.obtenerEgresos(org, otraCategoria.nombre)
-        then:
-        list.size() == 4
-    }
-    void 'obtener egresos entre fechas'() {
-        given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-        def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
-        crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, egreso)
-        crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, egreso)
-        crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, otroEgreso)
-        when:
-        def list = service.obtenerEgresosEntre(org, new Date() -1, new Date() +1)
-        then:
-        list.size() == 2
-        where:
-        egreso                | otroEgreso
-        [40.0, new Date() -1] | [30.0, new Date() -3]
-    }
-    void 'obtener egresos de categoria entre fechas'() {
-        given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-        def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
-        def otraCategoria = new Categoria(DATOS_CATEGORIA_EGRESO_MODIFICADO).save(flush: true)
-        crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, egreso)
-        crearAsientosConFechas(org, otraCategoria, TipoAsiento.EGRESO, egreso)
-        crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, otroEgreso)
-        when:
-        def list = service.obtenerEgresosDeCategoriaEntre(org, categoria.nombre, new Date() -1, new Date() +1)
-        then:
-        list.size() == 1
-        where:
-        egreso                | otroEgreso
-        [40.0, new Date() -1] | [30.0, new Date() -3]
-    }
-    void 'obtener ingresos'() {
-        given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-        def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
-        crearAsientos(org, categoria, TipoAsiento.INGRESO, [10.0, 20.0, 30.0, 40.0])
-        when:
-        def list = service.obtenerIngresos(org, categoria.nombre, new Date(), new Date() + 1)
-        then:
-        list.size() == 4
-    }
-    void 'obtener ingresos de una categoria'() {
-        given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-        def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
-        def otraCategoria = new Categoria(DATOS_CATEGORIA_INGRESO_MODIFICADO).save(flush: true)
-        crearAsientos(org, categoria, TipoAsiento.INGRESO, [10.0, 20.0, 30.0, 40.0])
-        crearAsientos(org, otraCategoria, TipoAsiento.INGRESO, [10.0, 20.0, 30.0, 40.0])
-        when:
-        def list = service.obtenerIngresos(org, categoria.nombre)
-        then:
-        list.size() == 4
-    }
-    void 'obtener ingresos entre fechas'() {
-        given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-        def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
-        crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, ingreso)
-        crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, ingreso)
-        crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, otroIngreso)
-        when:
-        def list = service.obtenerIngresosEntre(org, new Date() -1, new Date() +1)
-        then:
-        list.size() == 2
-        where:
-        ingreso               | otroIngreso
-        [40.0, new Date() -1] | [30.0, new Date() -3]
-    }
-    void 'obtener ingresos de categoria entre fechas'() {
-        given:
-        def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-        def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
-        def otraCategoria = new Categoria(DATOS_CATEGORIA_INGRESO_MODIFICADO).save(flush: true)
-        crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, ingreso)
-        crearAsientosConFechas(org, otraCategoria, TipoAsiento.INGRESO, ingreso)
-        crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, otroIngreso)
-        when:
-        def list = service.obtenerIngresosDeCategoriaEntre(org, categoria.nombre, new Date() -1, new Date() +1)
-        then:
-        list.size() == 1
-        where:
-        ingreso               | otroIngreso
-        [40.0, new Date() -1] | [30.0, new Date() -3]
-    }
+    // void crearAsientos(org, _categoria, tipoAsiento, values) {
+    //     values.each { valor ->
+    //         new Asiento().with {
+    //             fecha           = new Date()
+    //             detalle         = 'asiento'
+    //             tipo            = tipoAsiento
+    //             categoria       = _categoria
+    //             organizacion    = org
+    //             monto           = valor
+    //             it
+    //         }.save(flush: true, failOnError: true)
+    //     }
+    // }
+    // void crearAsientosConFechas(org, _categoria, tipoAsiento, value) {
+    //     new Asiento().with {
+    //         fecha           = value[1]
+    //         detalle         = 'asiento'
+    //         tipo            = tipoAsiento
+    //         categoria       = _categoria
+    //         organizacion    = org
+    //         monto           = value[0]
+    //         it
+    //     }.save(flush: true, failOnError: true)
+    // }
+    //
+    // void 'obtener egresos'() {
+    //     given:
+    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+    //     def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
+    //     crearAsientos(org, categoria, TipoAsiento.EGRESO, [10.0, 20.0, 30.0, 40.0])
+    //     when:
+    //     def list = service.obtenerEgresos(org, categoria.nombre, new Date() -1, new Date() + 1)
+    //     then:
+    //     list.size() == 4
+    // }
+    // void 'obtener egresos de una categoria'() {
+    //     given:
+    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+    //     def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
+    //     def otraCategoria = new Categoria(DATOS_CATEGORIA_EGRESO_MODIFICADO).save(flush: true)
+    //     crearAsientos(org, categoria, TipoAsiento.EGRESO, [10.0, 20.0, 30.0, 40.0])
+    //     crearAsientos(org, otraCategoria, TipoAsiento.EGRESO, [10.0, 20.0, 30.0, 40.0])
+    //     when:
+    //     def list = service.obtenerEgresos(org, otraCategoria.nombre)
+    //     then:
+    //     list.size() == 4
+    // }
+    // void 'obtener egresos entre fechas'() {
+    //     given:
+    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+    //     def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
+    //     crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, egreso)
+    //     crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, egreso)
+    //     crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, otroEgreso)
+    //     when:
+    //     def list = service.obtenerEgresosEntre(org, new Date() -1, new Date() +1)
+    //     then:
+    //     list.size() == 2
+    //     where:
+    //     egreso                | otroEgreso
+    //     [40.0, new Date() -1] | [30.0, new Date() -3]
+    // }
+    // void 'obtener egresos de categoria entre fechas'() {
+    //     given:
+    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+    //     def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
+    //     def otraCategoria = new Categoria(DATOS_CATEGORIA_EGRESO_MODIFICADO).save(flush: true)
+    //     crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, egreso)
+    //     crearAsientosConFechas(org, otraCategoria, TipoAsiento.EGRESO, egreso)
+    //     crearAsientosConFechas(org, categoria, TipoAsiento.EGRESO, otroEgreso)
+    //     when:
+    //     def list = service.obtenerEgresosDeCategoriaEntre(org, categoria.nombre, new Date() -1, new Date() +1)
+    //     then:
+    //     list.size() == 1
+    //     where:
+    //     egreso                | otroEgreso
+    //     [40.0, new Date() -1] | [30.0, new Date() -3]
+    // }
+    // void 'obtener ingresos'() {
+    //     given:
+    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+    //     def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
+    //     crearAsientos(org, categoria, TipoAsiento.INGRESO, [10.0, 20.0, 30.0, 40.0])
+    //     when:
+    //     def list = service.obtenerIngresos(org, categoria.nombre, new Date(), new Date() + 1)
+    //     then:
+    //     list.size() == 4
+    // }
+    // void 'obtener ingresos de una categoria'() {
+    //     given:
+    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+    //     def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
+    //     def otraCategoria = new Categoria(DATOS_CATEGORIA_INGRESO_MODIFICADO).save(flush: true)
+    //     crearAsientos(org, categoria, TipoAsiento.INGRESO, [10.0, 20.0, 30.0, 40.0])
+    //     crearAsientos(org, otraCategoria, TipoAsiento.INGRESO, [10.0, 20.0, 30.0, 40.0])
+    //     when:
+    //     def list = service.obtenerIngresos(org, categoria.nombre)
+    //     then:
+    //     list.size() == 4
+    // }
+    // void 'obtener ingresos entre fechas'() {
+    //     given:
+    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+    //     def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
+    //     crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, ingreso)
+    //     crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, ingreso)
+    //     crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, otroIngreso)
+    //     when:
+    //     def list = service.obtenerIngresosEntre(org, new Date() -1, new Date() +1)
+    //     then:
+    //     list.size() == 2
+    //     where:
+    //     ingreso               | otroIngreso
+    //     [40.0, new Date() -1] | [30.0, new Date() -3]
+    // }
+    // void 'obtener ingresos de categoria entre fechas'() {
+    //     given:
+    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
+    //     def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
+    //     def otraCategoria = new Categoria(DATOS_CATEGORIA_INGRESO_MODIFICADO).save(flush: true)
+    //     crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, ingreso)
+    //     crearAsientosConFechas(org, otraCategoria, TipoAsiento.INGRESO, ingreso)
+    //     crearAsientosConFechas(org, categoria, TipoAsiento.INGRESO, otroIngreso)
+    //     when:
+    //     def list = service.obtenerIngresosDeCategoriaEntre(org, categoria.nombre, new Date() -1, new Date() +1)
+    //     then:
+    //     list.size() == 1
+    //     where:
+    //     ingreso               | otroIngreso
+    //     [40.0, new Date() -1] | [30.0, new Date() -3]
+    // }
     /*void 'obtener reporte de ingresos mensual'() {
         given:
         def org = Builder.crearOrganizacionConDatos().save(flush: true)

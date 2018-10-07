@@ -23,7 +23,9 @@ repositories {
 
 dependencies {
     compile "org.springframework.boot:spring-boot-starter-logging"
+    compile "org.springframework.boot:spring-boot-starter-tomcat"
     compile "org.springframework.boot:spring-boot-autoconfigure"
+    compile "org.grails:grails-plugin-interceptors"
     compile "org.grails:grails-core"
     console "org.grails:grails-console"
     profile "org.grails.profiles:plugin"
@@ -51,12 +53,6 @@ grailsPublish {
     title = "Accounting Module"
     desc = "Munaylab Accounting Module"
     developers = [team:"team@munaylab.org"]
-}
-
-grails {
-    plugins {
-        compile project(':module-core')
-    }
 }
 
 test {

@@ -15,7 +15,7 @@ class CategoriaCommand implements grails.validation.Validateable {
         idCategoriaPadre nullable: true
     }
 
-    boolean nuevaCategoria() {
-        return id == null
+    boolean getEsNuevaCategoria() {
+        id == null
     }
 }
