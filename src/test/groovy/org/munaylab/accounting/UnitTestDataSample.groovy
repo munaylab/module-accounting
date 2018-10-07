@@ -19,12 +19,37 @@ interface UnitTestDataSample {
         detalle: 'detalle de asiento modificado'
     ]
 
-    // static final DATOS_EGRESO_MODIFICADO = [id: 1, monto: 10.0, fecha: new Date(), detalle: 'detalle modificado',
-    //     esIngreso: false, orgId: 1]
-    //
     static final EJEMPLO_DE_CATEGORIA_EGRESO = [
         nombre: 'nombre',
         detalle: 'detalle detalle',
         tipo: TipoAsiento.EGRESO
+    ]
+
+    static final EJEMPLO_DE_INGRESO = [
+        idEntity: 1,
+        monto: 100.0,
+        fecha: new Date(),
+        tipo: TipoAsiento.INGRESO,
+        detalle: 'detalle de asiento'
+    ]
+
+    static final EJEMPLO_DE_INGRESO_MODIFICADO = [
+        idEntity: 1,
+        monto: 200.0,
+        fecha: new Date() -7,
+        tipo: TipoAsiento.INGRESO,
+        detalle: 'detalle de asiento modificado'
+    ]
+
+    static final EJEMPLO_DE_CATEGORIA_INGRESO = [
+        nombre: 'nombre',
+        detalle: 'detalle detalle',
+        tipo: TipoAsiento.INGRESO
+    ]
+
+    static final EJEMPLO_DE_CATEGORIA_PADRE_INGRESO = [
+        nombre: 'nombre padre',
+        detalle: 'detalle detalle de padre',
+        tipo: TipoAsiento.INGRESO
     ]
 }

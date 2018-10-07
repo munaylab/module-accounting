@@ -20,11 +20,12 @@ class BalanceService {
         }
     }
 
-    def cancelarAsiento(Long id) {
+    public Asiento cancelarAsiento(Long id) {
         Asiento asiento = Asiento.findByIdAndEnabled(id, true)
         if (!asiento) return
         asiento.enabled = false
         asiento.save()
+        return asiento
     }
 
     public Asiento actualizarAsiento(AsientoCommand command) {
@@ -55,16 +56,14 @@ class BalanceService {
     public Categoria actualizarCategoria(CategoriaCommand command) {
         if (!command || !command.validate()) return null
 
-        if (!command.esNuevaCategoria) {
-            categoria = Categoria.get(command.id)
-            categoria.nombre = command.nombre.toLowerCase()
-            categoria.detalle = command.detalle
-            // TODO advertencia si cambia el tipo
-            categoria.save()
-            return categoria
-        }
+        if (command.esNuevaCategoria) return crearNuevaCategoria(command)
 
-        return crearNuevaCategoria(command)
+        Categoria categoria = Categoria.get(command.id)
+        categoria.nombre = command.nombre.toLowerCase()
+        categoria.detalle = command.detalle
+        // TODO advertencia si cambia el tipo
+        categoria.save()
+        return categoria
     }
 
     private Categoria crearNuevaCategoria(CategoriaCommand command) {

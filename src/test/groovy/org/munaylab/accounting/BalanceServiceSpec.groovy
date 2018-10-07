@@ -17,6 +17,26 @@ class BalanceServiceSpec extends UnitTestBuilder
         mockDomains Asiento, Categoria
     }
 
+    void 'actualizar un asiento con errores'() {
+        given:
+        def command = new AsientoCommand(detalle: detalle, monto: monto)
+        expect:
+        service.actualizarAsiento(command) == null
+        where:
+        detalle   | monto
+        '.'       | 0
+        'detalle' | -1
+    }
+
+    void 'cancelar egreso'() {
+        given:
+        def egreso = crearAsientoConDatos(EJEMPLO_DE_EGRESO, EJEMPLO_DE_CATEGORIA_EGRESO).save()
+        when:
+        def egresoCancelado = service.cancelarAsiento(egreso.id)
+        then:
+        comprobarQueElAsientoFueCancelado(egresoCancelado)
+    }
+
     void 'obtener nuevo egreso desde un command'() {
         given:
         def command = crearAsientoCommandConDatos(EJEMPLO_DE_EGRESO)
@@ -43,7 +63,7 @@ class BalanceServiceSpec extends UnitTestBuilder
         when:
         def egreso = service.actualizarAsiento(command)
         then:
-        comprobarQueElAsientoSeGuardo(egreso)
+        comprobarQueElAsientoFueGuardado(egreso)
     }
 
     void 'agregar un nuevo egreso con una categoria existente'() {
@@ -54,7 +74,7 @@ class BalanceServiceSpec extends UnitTestBuilder
         when:
         def egreso = service.actualizarAsiento(command)
         then:
-        comprobarQueElAsientoSeGuardo(egreso)
+        comprobarQueElAsientoFueGuardado(egreso)
     }
 
     void 'modificar un egreso existente'() {
@@ -64,110 +84,105 @@ class BalanceServiceSpec extends UnitTestBuilder
         when:
         def egresoModificado = service.actualizarAsiento(command)
         then:
-        comprobarQueElAsientoSeGuardo(egresoModificado)
-        comprobarQueElAsientoSeModifico(egresoModificado, EJEMPLO_DE_EGRESO)
         Asiento.count() == 1
+        comprobarQueElAsientoFueGuardado(egresoModificado)
+        comprobarQueElAsientoFueModificado(egresoModificado, EJEMPLO_DE_EGRESO)
     }
 
-    // void 'cancelar egreso'() {
-    //     given:
-    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-    //     def categoriaEgreso = new Categoria(DATOS_CATEGORIA_EGRESO)
-    //     def egreso = new Asiento(DATOS_EGRESO).with {
-    //         tipo            = TipoAsiento.EGRESO
-    //         categoria       = categoriaEgreso
-    //         organizacion    = org
-    //         it
-    //     }.save(flush: true)
-    //     when:
-    //     service.cancelarAsiento(egreso.id)
-    //     then:
-    //     Asiento.countByEnabled(true) == 0
-    //     Asiento.countByEnabled(false) == 1
-    //     Categoria.count() == 1
-    // }
-    // void 'agregar ingreso'() {
-    //     given:
-    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-    //     and:
-    //     def command = crearCommand(DATOS_INGRESO, DATOS_CATEGORIA_INGRESO)
-    //     when:
-    //     def ingreso = service.actualizarAsiento(command)
-    //     then:
-    //     ingreso != null && Asiento.countByEnabled(true) == 1
-    //     Categoria.count() == 1
-    // }
-    // void 'modificar ingreso'() {
-    //     given:
-    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-    //     def categoriaIngreso = new Categoria(DATOS_CATEGORIA_INGRESO)
-    //     def ingreso = new Asiento(DATOS_INGRESO).with {
-    //         tipo            = TipoAsiento.INGRESO
-    //         categoria       = categoriaIngreso
-    //         organizacion    = org
-    //         it
-    //     }.save(flush: true)
-    //     and:
-    //     def command = crearCommand(DATOS_INGRESO_MODIFICADO, DATOS_CATEGORIA_INGRESO_MODIFICADO)
-    //     when:
-    //     ingreso = service.actualizarAsiento(command)
-    //     then:
-    //     assert ingreso.enabled == true
-    //     ingreso != null && Asiento.countByEnabled(true) == 1
-    //     ingreso.monto == command.monto && Asiento.get(1).monto == command.monto
-    //     ingreso.detalle == command.detalle && Asiento.get(1).detalle == command.detalle
-    //     Categoria.count() == 1
-    // }
-    // void 'cancelar ingreso'() {
-    //     given:
-    //     def org = new Organizacion(DATOS_ORG_VERIFICADA).save(flush: true)
-    //     def categoriaIngreso = new Categoria(DATOS_CATEGORIA_INGRESO)
-    //     def ingreso = new Asiento(DATOS_INGRESO).with {
-    //         tipo            = TipoAsiento.INGRESO
-    //         categoria       = categoriaIngreso
-    //         organizacion    = org
-    //         it
-    //     }.save(flush: true)
-    //     when:
-    //     service.cancelarAsiento(ingreso.id)
-    //     then:
-    //     Asiento.countByEnabled(true) == 0
-    //     Asiento.countByEnabled(false) == 1
-    //     Categoria.count() == 1
-    // }
-    // void 'crear categoria'() {
-    //     given:
-    //     def command = new CategoriaCommand(DATOS_CATEGORIA_INGRESO)
-    //     when:
-    //     service.actualizarCategoria(command)
-    //     then:
-    //     Categoria.count() == 1
-    // }
-    // void 'crear subcategoria'() {
-    //     given:
-    //     new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
-    //     def command = new CategoriaCommand(DATOS_CATEGORIA_INGRESO_MODIFICADO)
-    //     command.id = null
-    //     command.idCategoriaPadre = 1
-    //     when:
-    //     def categoria = service.actualizarCategoria(command)
-    //     then:
-    //     categoria != null && Categoria.count() == 2
-    //     Categoria.get(1).subcategorias.size() == 1
-    // }
-    // void 'modificar categoria'() {
-    //     given:
-    //     new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
-    //     def command = new CategoriaCommand(DATOS_CATEGORIA_INGRESO_MODIFICADO)
-    //     when:
-    //     def categoria = service.actualizarCategoria(command)
-    //     then:
-    //     categoria != null && Categoria.count() == 1
-    //     categoria.nombre == command.nombre
-    //     categoria.detalle == command.detalle
-    //     Categoria.get(1).nombre == command.nombre
-    //     Categoria.get(1).detalle == command.detalle
-    // }
+    void 'cancelar ingreso'() {
+        given:
+        def ingreso = crearAsientoConDatos(EJEMPLO_DE_INGRESO, EJEMPLO_DE_CATEGORIA_INGRESO).save()
+        when:
+        def ingresoCancelado = service.cancelarAsiento(ingreso.id)
+        then:
+        comprobarQueElAsientoFueCancelado(ingresoCancelado)
+    }
+
+    void 'obtener nuevo ingreso desde un command'() {
+        given:
+        def command = crearAsientoCommandConDatos(EJEMPLO_DE_INGRESO)
+        when:
+        def ingreso = service.obtenerAsientoDeCommand(command)
+        then:
+        comprobarQueAsientoYCommandSonIguales(ingreso, command)
+    }
+
+    void 'obtener ingreso existente desde un command'() {
+        given:
+        crearAsientoConDatos(EJEMPLO_DE_INGRESO, EJEMPLO_DE_CATEGORIA_INGRESO).save()
+        and:
+        def command = crearAsientoCommandConDatos(EJEMPLO_DE_INGRESO + [id: 1])
+        when:
+        def ingreso = service.obtenerAsientoDeCommand(command)
+        then:
+        comprobarQueAsientoYCommandSonIguales(ingreso, command)
+    }
+
+    void 'agregar un nuevo ingreso con una nueva categoria'() {
+        given:
+        def command = crearAsientoCommandConDatos(EJEMPLO_DE_INGRESO, EJEMPLO_DE_CATEGORIA_INGRESO)
+        when:
+        def ingreso = service.actualizarAsiento(command)
+        then:
+        comprobarQueElAsientoFueGuardado(ingreso)
+    }
+
+    void 'agregar un nuevo ingreso con una categoria existente'() {
+        given:
+        crearCategoriaConDatos(EJEMPLO_DE_CATEGORIA_INGRESO).save(failOnError: true)
+        and:
+        def command = crearAsientoCommandConDatos(EJEMPLO_DE_INGRESO, [id: 1])
+        when:
+        def ingreso = service.actualizarAsiento(command)
+        then:
+        comprobarQueElAsientoFueGuardado(ingreso)
+    }
+
+    void 'modificar un ingreso existente'() {
+        given:
+        crearAsientoConDatos(EJEMPLO_DE_INGRESO, EJEMPLO_DE_CATEGORIA_INGRESO).save()
+        def command = crearAsientoCommandConDatos(EJEMPLO_DE_INGRESO_MODIFICADO + [id: 1], [id: 1])
+        when:
+        def ingresoModificado = service.actualizarAsiento(command)
+        then:
+        Asiento.count() == 1
+        comprobarQueElAsientoFueGuardado(ingresoModificado)
+        comprobarQueElAsientoFueModificado(ingresoModificado, EJEMPLO_DE_INGRESO)
+    }
+
+    void 'crear nueva categoria desde command'() {
+        given:
+        def command = new CategoriaCommand(EJEMPLO_DE_CATEGORIA_INGRESO)
+        when:
+        def categoria = service.actualizarCategoria(command)
+        then:
+        Categoria.count() == 1
+        comprobarQueLaCategoriaFueGuardada(categoria)
+    }
+
+    void 'crear nueva sub-categoria desde command'() {
+        given:
+        new Categoria(EJEMPLO_DE_CATEGORIA_PADRE_INGRESO).save()
+        def command = new CategoriaCommand(EJEMPLO_DE_CATEGORIA_INGRESO)
+        command.idCategoriaPadre = 1
+        when:
+        def categoria = service.actualizarCategoria(command)
+        then:
+        comprobarQueLaCategoriaFueGuardada(categoria)
+        Categoria.count() == 2 && Categoria.get(1).subcategorias.size() == 1
+    }
+
+    void 'modificar una categoria existente'() {
+        given:
+        new Categoria(EJEMPLO_DE_CATEGORIA_PADRE_INGRESO).save()
+        def command = new CategoriaCommand(EJEMPLO_DE_CATEGORIA_INGRESO + [id: 1])
+        when:
+        def categoria = service.actualizarCategoria(command)
+        then:
+        Categoria.count() == 1
+        comprobarQueLaCategoriaFueModificada(categoria, EJEMPLO_DE_CATEGORIA_INGRESO + [id: 1])
+    }
+
     // void 'obtener categorias de egresos'() {
     //     given:
     //     def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)

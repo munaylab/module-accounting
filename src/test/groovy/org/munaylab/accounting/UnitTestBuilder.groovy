@@ -14,7 +14,7 @@ class UnitTestBuilder extends Specification implements UnitTestDataSample {
         return new Categoria(datos)
     }
 
-    protected void comprobarQueElAsientoSeGuardo(Asiento asiento) {
+    protected void comprobarQueElAsientoFueGuardado(Asiento asiento) {
         assert asiento.id != null
         def asientoGuardado = Asiento.get(asiento.id)
         assert asiento.id == asientoGuardado.id
@@ -27,7 +27,7 @@ class UnitTestBuilder extends Specification implements UnitTestDataSample {
         assert Asiento.countByEnabled(true) == 1
     }
 
-    protected void comprobarQueElAsientoSeModifico(Asiento asiento, datosAsientoModificado) {
+    protected void comprobarQueElAsientoFueModificado(Asiento asiento, datosAsientoModificado) {
         assert asiento.tipo == datosAsientoModificado.tipo
         assert asiento.fecha != datosAsientoModificado.fecha
         assert asiento.monto != datosAsientoModificado.monto
@@ -53,6 +53,28 @@ class UnitTestBuilder extends Specification implements UnitTestDataSample {
         assert asiento.monto == command.monto
         assert asiento.detalle == command.detalle
         assert asiento.idEntity == command.idEntity
+    }
+
+    protected void comprobarQueElAsientoFueCancelado(Asiento asiento) {
+        assert asiento.enabled == false
+        assert Asiento.count() == 1
+        assert Asiento.countByEnabled(true) == 0
+    }
+
+    protected void comprobarQueLaCategoriaFueGuardada(Categoria categoria) {
+        assert categoria.id != null
+        def categoriaGuardada = Categoria.get(categoria.id)
+        assert categoria.id == categoriaGuardada.id
+        assert categoria.tipo == categoriaGuardada.tipo
+        assert categoria.nombre == categoriaGuardada.nombre
+        assert categoria.detalle == categoriaGuardada.detalle
+    }
+
+    protected void comprobarQueLaCategoriaFueModificada(Categoria categoria, datosCategoriaModificada) {
+        assert categoria.id == datosCategoriaModificada.id
+        assert categoria.tipo == datosCategoriaModificada.tipo
+        assert categoria.nombre == datosCategoriaModificada.nombre
+        assert categoria.detalle == datosCategoriaModificada.detalle
     }
 
     // static def DATOS_ORG = [nombre: 'MunayLab', tipo: TipoOrganizacion.FUNDACION, nombreURL: 'org',
