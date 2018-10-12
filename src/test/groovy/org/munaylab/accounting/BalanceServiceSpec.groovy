@@ -183,62 +183,36 @@ class BalanceServiceSpec extends UnitTestBuilder
         comprobarQueLaCategoriaFueModificada(categoria, EJEMPLO_DE_CATEGORIA_INGRESO + [id: 1])
     }
 
-    // void 'obtener categorias de egresos'() {
-    //     given:
-    //     def categoria = new Categoria(DATOS_CATEGORIA_EGRESO).save(flush: true)
-    //     5.times {
-    //         def subcategoria = new Categoria().with {
-    //             nombre  = "subcategoria $it"
-    //             detalle = "subcategoria detalle"
-    //             tipo    = TipoAsiento.EGRESO
-    //             it
-    //         }
-    //         categoria.addToSubcategorias(subcategoria)
-    //     }
-    //     categoria.save(flush: true)
-    //     when:
-    //     def categorias = service.obtenerCategorias(TipoAsiento.EGRESO)
-    //     then:
-    //     categorias.size() == 1
-    //     categorias.first().subcategorias.size() == 5
-    // }
-    // void 'obtener categorias de ingresos'() {
-    //     given:
-    //     def categoria = new Categoria(DATOS_CATEGORIA_INGRESO).save(flush: true)
-    //     5.times {
-    //         def subcategoria = new Categoria().with {
-    //             nombre  = "subcategoria $it"
-    //             detalle = "subcategoria detalle"
-    //             tipo    = TipoAsiento.INGRESO
-    //             it
-    //         }
-    //         categoria.addToSubcategorias(subcategoria)
-    //     }
-    //     categoria.save(flush: true)
-    //     when:
-    //     def categorias = service.obtenerCategorias(TipoAsiento.INGRESO)
-    //     then:
-    //     categorias.size() == 1
-    //     categorias.first().subcategorias.size() == 5
-    // }
+    void 'obtener listado de categorias'() {
+        given:
+        def categoria = new Categoria(EJEMPLO_DE_CATEGORIA_PADRE_INGRESO)
+        5.times {
+            categoria.addToSubcategorias(new Categoria(EJEMPLO_DE_CATEGORIA_INGRESO))
+        }
+        categoria.save()
+        when:
+        def categorias = service.obtenerCategorias(TipoAsiento.INGRESO)
+        then:
+        categorias.size() == 1
+        categorias.first().subcategorias.size() == 5
+    }
 
-    /* Metodo groupProperty no funciona en unit test
+    /* Metodo groupProperty no funciona en unit test*/
     void 'calcular balance sin fechas'() {
         given:
-        def org = Builder.crearOrganizacionConDatos().save(flush: true)
-        def categoriaEgresos = Builder.crearCategoriaEgreso().save(flush: true)
-        def categoriaIngresos = Builder.crearCategoriaIngreso().save(flush: true)
-        crearAsientos(org, categoriaEgresos, TipoAsiento.EGRESO, [egreso1, egreso2, egreso3])
-        crearAsientos(org, categoriaIngresos, TipoAsiento.INGRESO, [ingreso1, ingreso2, ingreso3])
+        def categoriaEgresos = new Categoria(EJEMPLO_DE_CATEGORIA_EGRESO).save()
+        def categoriaIngresos = new Categoria(EJEMPLO_DE_CATEGORIA_INGRESO).save()
+        crearAsientos(1, categoriaEgresos, TipoAsiento.EGRESO, [egreso1, egreso2, egreso3])
+        crearAsientos(1, categoriaIngresos, TipoAsiento.INGRESO, [ingreso1, ingreso2, ingreso3])
         expect:
-        service.calcularBalanceTotal(org) == total
+        service.calcularBalanceTotal(1) == total
         where:
         egreso1 | egreso2 | egreso3 | ingreso1 | ingreso2 | ingreso3 | total
         10.0    | 10.0    | 10.0    | 20.0     | 20.0     | 20.0     | 30.0
         20.0    | 10.0    | 10.0    | 20.0     | 20.0     | 20.0     | 20.0
         20.0    | 20.0    | 10.0    | 10.0     | 10.0     | 10.0     | -20.0
     }
-    */
+
     /* Metodo groupProperty no funciona en unit test
     void 'calcular balance con fechas'() {
         given:
@@ -257,19 +231,19 @@ class BalanceServiceSpec extends UnitTestBuilder
         [90.0, new Date() -1] | [50.0, new Date() -1]  | -40.0 | new Date() -2 | new Date() -1
     }
     */
-    // void crearAsientos(org, _categoria, tipoAsiento, values) {
-    //     values.each { valor ->
-    //         new Asiento().with {
-    //             fecha           = new Date()
-    //             detalle         = 'asiento'
-    //             tipo            = tipoAsiento
-    //             categoria       = _categoria
-    //             organizacion    = org
-    //             monto           = valor
-    //             it
-    //         }.save(flush: true, failOnError: true)
-    //     }
-    // }
+    void crearAsientos(_idEntity, _categoria, tipoAsiento, values) {
+        values.each { valor ->
+            new Asiento().with {
+                fecha           = new Date()
+                detalle         = 'asiento'
+                tipo            = tipoAsiento
+                categoria       = _categoria
+                idEntity        = _idEntity
+                monto           = valor
+                it
+            }.save(flush: true, failOnError: true)
+        }
+    }
     // void crearAsientosConFechas(org, _categoria, tipoAsiento, value) {
     //     new Asiento().with {
     //         fecha           = value[1]

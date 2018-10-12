@@ -13,7 +13,7 @@ import grails.gorm.transactions.NotTransactional
 @Transactional
 class BalanceService {
 
-    def obtenerCategorias(TipoAsiento tipo) {
+    public List<Categoria> obtenerCategorias(TipoAsiento tipo) {
         Categoria.createCriteria().list {
             eq 'tipo', tipo
             isNull 'categoriaPadre'
@@ -135,33 +135,34 @@ class BalanceService {
     //     Date desde = new Date() - 14
     //     obtenerAsientos(org, TipoAsiento.NONE, null, desde, new Date())
     // }
-    //
-    // //TODO testear
-    // @Transactional(readOnly = true)
-    // def calcularBalanceTotal(Organizacion org, Date desde = null, Date hasta = null) {
-    //     def result = Asiento.createCriteria().list {
-    //         eq 'organizacion', org
-    //         eq 'enabled', true
-    //         if (desde) {
-    //             between 'fecha', desde.clearTime(), hasta
-    //         }
-    //         projections {
-    //             sum 'monto'
-    //             groupProperty 'tipo'
-    //         }
-    //         order 'tipo', 'asc'
-    //     }
-    //     if (result.empty)
-    //         return 0
-    //     if (result.first()[1] != TipoAsiento.EGRESO)
-    //         return result.first()[0]
-    //     if (result.last()[1] != TipoAsiento.INGRESO)
-    //         return -result.first()[0]
-    //     int totalEgreso = result.first()[0]
-    //     int totalIngreso = result.last()[0]
-    //     totalIngreso - totalEgreso
-    // }
-    //
+
+    //TODO testear
+    @Transactional(readOnly = true)
+    public double calcularBalanceTotal(Long idEntity, Date desde = null, Date hasta = null) {
+        def result = Asiento.createCriteria().list {
+            eq 'idEntity', idEntity
+            eq 'enabled', true
+            if (desde && hasta) {
+                between 'fecha', desde.clearTime(), hasta
+            }
+            projections {
+                sum 'monto'
+                groupProperty 'tipo'
+            }
+            order 'tipo', 'asc'
+        }
+
+        if (result.empty)
+            return 0
+        if (result.first()[1] != TipoAsiento.EGRESO)
+            return result.first()[0]
+        if (result.last()[1] != TipoAsiento.INGRESO)
+            return -result.first()[0]
+        int totalEgreso = result.first()[0]
+        int totalIngreso = result.last()[0]
+        totalIngreso - totalEgreso
+    }
+
     // //TODO testear
     // @Transactional(readOnly = true)
     // def obtenerBalancePorPeriodo(Organizacion org, TipoAsiento tipo, TipoFiltro filtro = TipoFiltro.ANUAL) {
