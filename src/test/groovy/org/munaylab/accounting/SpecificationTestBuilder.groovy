@@ -2,7 +2,7 @@ package org.munaylab.accounting
 
 import spock.lang.Specification
 
-class UnitTestBuilder extends Specification implements UnitTestDataSample {
+class SpecificationTestBuilder extends Specification implements UnitTestDataSample {
 
     protected Asiento crearAsientoConDatos(datos, datosCategoria) {
         def asiento = new Asiento(datos)
@@ -75,6 +75,26 @@ class UnitTestBuilder extends Specification implements UnitTestDataSample {
         assert categoria.tipo == datosCategoriaModificada.tipo
         assert categoria.nombre == datosCategoriaModificada.nombre
         assert categoria.detalle == datosCategoriaModificada.detalle
+    }
+
+    protected Asiento crearAsiento(datos) {
+        return new Asiento().with {
+            fecha       = datos.fecha ?: new Date()
+            detalle     = datos.detalle ?: 'asiento'
+            tipo        = datos.tipo ?: TipoAsiento.EGRESO
+            categoria   = datos.categoria
+            idEntity    = datos.entity
+            monto       = datos.monto ?: 100
+            it
+        }
+    }
+
+    protected Asiento crearEgreso(datos) {
+        return crearAsiento(datos + [tipo: TipoAsiento.EGRESO])
+    }
+
+    protected Asiento crearIngreso(datos) {
+        return crearAsiento(datos + [tipo: TipoAsiento.INGRESO])
     }
 
     // static def DATOS_ORG = [nombre: 'MunayLab', tipo: TipoOrganizacion.FUNDACION, nombreURL: 'org',

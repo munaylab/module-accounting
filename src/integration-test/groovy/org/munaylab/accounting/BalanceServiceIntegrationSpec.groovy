@@ -3,22 +3,27 @@ package org.munaylab.accounting
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
 import org.springframework.beans.factory.annotation.Autowired
-import spock.lang.Specification
 
 @Rollback
 @Integration
-class BalanceServiceIntegrationSpec extends Specification {
+class BalanceServiceIntegrationSpec extends SpecificationTestBuilder {
 
     @Autowired BalanceService service
 
     void 'calcular balance sin fechas'() {
         given:
+        long idEntity = 1
         def categoriaEgresos = new Categoria(EJEMPLO_DE_CATEGORIA_EGRESO).save()
         def categoriaIngresos = new Categoria(EJEMPLO_DE_CATEGORIA_INGRESO).save()
-        crearAsientos(1, categoriaEgresos, TipoAsiento.EGRESO, [egreso1, egreso2, egreso3])
-        crearAsientos(1, categoriaIngresos, TipoAsiento.INGRESO, [ingreso1, ingreso2, ingreso3])
+        and:
+        [egreso1, egreso2, egreso3].each { monto ->
+            crearEgreso([categoria: categoriaEgresos, entity: idEntity, monto: monto]).save()
+        }
+        [ingreso1, ingreso2, ingreso3].each { monto ->
+            crearIngreso([categoria: categoriaIngresos, entity: idEntity, monto: monto]).save()
+        }
         expect:
-        service.calcularBalanceTotal(1) == total
+        service.calcularBalanceTotal(idEntity) == total
         where:
         egreso1 | egreso2 | egreso3 | ingreso1 | ingreso2 | ingreso3 | total
         10.0    | 10.0    | 10.0    | 20.0     | 20.0     | 20.0     | 30.0
@@ -26,30 +31,22 @@ class BalanceServiceIntegrationSpec extends Specification {
         20.0    | 20.0    | 10.0    | 10.0     | 10.0     | 10.0     | -20.0
     }
 
-    static final EJEMPLO_DE_CATEGORIA_EGRESO = [
-        nombre: 'nombre',
-        detalle: 'detalle detalle',
-        tipo: TipoAsiento.EGRESO
-    ]
-
-    static final EJEMPLO_DE_CATEGORIA_INGRESO = [
-        nombre: 'nombre',
-        detalle: 'detalle detalle',
-        tipo: TipoAsiento.INGRESO
-    ]
-
-    void crearAsientos(_idEntity, _categoria, tipoAsiento, values) {
-        values.each { valor ->
-            new Asiento().with {
-                fecha           = new Date()
-                detalle         = 'asiento'
-                tipo            = tipoAsiento
-                categoria       = _categoria
-                idEntity        = _idEntity
-                monto           = valor
-                it
-            }.save(flush: true, failOnError: true)
-        }
+    void 'calcular balance con fechas'() {
+        given:
+        Long idEntity = 1
+        def categoriaEgresos = new Categoria(EJEMPLO_DE_CATEGORIA_EGRESO).save()
+        def categoriaIngresos = new Categoria(EJEMPLO_DE_CATEGORIA_INGRESO).save()
+        and:
+        crearEgreso([categoria: categoriaEgresos, entity: idEntity] + egreso)
+        crearIngreso([categoria: categoriaIngresos, entity: idEntity] + ingreso)
+        expect:
+        service.calcularBalanceTotal(idEntity, desde, hasta) == total
+        where:
+        egreso                              | ingreso                              | total | desde         | hasta
+        [monto: 40.0, fecha: new Date() -2] | [monto: 100.0, fecha: new Date() -3] | 60.0  | new Date() -3 | new Date() -1
+        [monto: 90.0, fecha: new Date() -5] | [monto: 100.0, fecha: new Date() -3] | 100.0 | new Date() -3 | new Date() -1
+        [monto: 90.0, fecha: new Date() -5] | [monto: 100.0, fecha: new Date() -5] | 0.0   | new Date() -1 | new Date() -1
+        [monto: 90.0, fecha: new Date() -1] | [monto: 50.0, fecha: new Date() -1]  | -40.0 | new Date() -2 | new Date() -1
     }
 
 }

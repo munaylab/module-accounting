@@ -8,9 +8,8 @@ import org.munaylab.accounting.TipoAsiento
 
 import grails.testing.gorm.DataTest
 import grails.testing.services.ServiceUnitTest
-import spock.lang.Specification
 
-class BalanceServiceSpec extends UnitTestBuilder
+class BalanceServiceSpec extends SpecificationTestBuilder
         implements ServiceUnitTest<BalanceService>, DataTest {
 
     void setupSpec() {
@@ -197,53 +196,6 @@ class BalanceServiceSpec extends UnitTestBuilder
         categorias.first().subcategorias.size() == 5
     }
 
-    /* Metodo groupProperty no funciona en unit test*/
-    void 'calcular balance sin fechas'() {
-        given:
-        def categoriaEgresos = new Categoria(EJEMPLO_DE_CATEGORIA_EGRESO).save()
-        def categoriaIngresos = new Categoria(EJEMPLO_DE_CATEGORIA_INGRESO).save()
-        crearAsientos(1, categoriaEgresos, TipoAsiento.EGRESO, [egreso1, egreso2, egreso3])
-        crearAsientos(1, categoriaIngresos, TipoAsiento.INGRESO, [ingreso1, ingreso2, ingreso3])
-        expect:
-        service.calcularBalanceTotal(1) == total
-        where:
-        egreso1 | egreso2 | egreso3 | ingreso1 | ingreso2 | ingreso3 | total
-        10.0    | 10.0    | 10.0    | 20.0     | 20.0     | 20.0     | 30.0
-        20.0    | 10.0    | 10.0    | 20.0     | 20.0     | 20.0     | 20.0
-        20.0    | 20.0    | 10.0    | 10.0     | 10.0     | 10.0     | -20.0
-    }
-
-    /* Metodo groupProperty no funciona en unit test
-    void 'calcular balance con fechas'() {
-        given:
-        def org = Builder.crearOrganizacionConDatos().save(flush: true)
-        def categoriaEgresos = Builder.crearCategoriaEgreso().save(flush: true)
-        def categoriaIngresos = Builder.crearCategoriaIngreso().save(flush: true)
-        crearAsientosConFechas(org, categoriaEgresos, TipoAsiento.EGRESO, egreso)
-        crearAsientosConFechas(org, categoriaIngresos, TipoAsiento.INGRESO, ingreso)
-        expect:
-        service.calcularBalanceTotal(org, desde, hasta) == total
-        where:
-        egreso                | ingreso                | total | desde         | hasta
-        [40.0, new Date() -2] | [100.0, new Date() -3] | 60.0  | new Date() -3 | new Date() -1
-        [90.0, new Date() -5] | [100.0, new Date() -3] | 100.0 | new Date() -3 | new Date() -1
-        [90.0, new Date() -5] | [100.0, new Date() -5] | 0.0   | new Date() -1 | new Date() -1
-        [90.0, new Date() -1] | [50.0, new Date() -1]  | -40.0 | new Date() -2 | new Date() -1
-    }
-    */
-    void crearAsientos(_idEntity, _categoria, tipoAsiento, values) {
-        values.each { valor ->
-            new Asiento().with {
-                fecha           = new Date()
-                detalle         = 'asiento'
-                tipo            = tipoAsiento
-                categoria       = _categoria
-                idEntity        = _idEntity
-                monto           = valor
-                it
-            }.save(flush: true, failOnError: true)
-        }
-    }
     // void crearAsientosConFechas(org, _categoria, tipoAsiento, value) {
     //     new Asiento().with {
     //         fecha           = value[1]
