@@ -136,7 +136,6 @@ class BalanceService {
     //     obtenerAsientos(org, TipoAsiento.NONE, null, desde, new Date())
     // }
 
-    //TODO testear
     @Transactional(readOnly = true)
     public double calcularBalanceTotal(Long idEntity, Date desde = null, Date hasta = null) {
         def result = Asiento.createCriteria().list {
@@ -152,15 +151,21 @@ class BalanceService {
             order 'tipo', 'asc'
         }
 
-        if (result.empty)
-            return 0
-        if (result.first()[1] != TipoAsiento.EGRESO)
-            return result.first()[0]
-        if (result.last()[1] != TipoAsiento.INGRESO)
-            return -result.first()[0]
+        if (result.empty) return 0
+        if (siElUnicoRegistroEsUnEgreso(result)) return -result.first()[0]
+        if (siElUnicoRegistroEsUnIngreso(result)) return result.first()[0]
+
         int totalEgreso = result.first()[0]
         int totalIngreso = result.last()[0]
-        totalIngreso - totalEgreso
+        return (totalIngreso - totalEgreso)
+    }
+
+    private boolean siElUnicoRegistroEsUnEgreso(result) {
+        return result.size() == 1 && result.first()[1] == TipoAsiento.EGRESO
+    }
+
+    private boolean siElUnicoRegistroEsUnIngreso(result) {
+        return result.size() == 1 && result.first()[1] == TipoAsiento.INGRESO
     }
 
     // //TODO testear
