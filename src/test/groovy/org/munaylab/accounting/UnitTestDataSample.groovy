@@ -20,7 +20,7 @@ interface UnitTestDataSample {
     ]
 
     static final EJEMPLO_DE_CATEGORIA_EGRESO = [
-        nombre: 'nombre',
+        nombre: 'categoria egreso',
         detalle: 'detalle detalle',
         tipo: TipoAsiento.EGRESO
     ]
@@ -42,13 +42,13 @@ interface UnitTestDataSample {
     ]
 
     static final EJEMPLO_DE_CATEGORIA_INGRESO = [
-        nombre: 'nombre',
+        nombre: 'categoria ingreso',
         detalle: 'detalle detalle',
         tipo: TipoAsiento.INGRESO
     ]
 
     static final EJEMPLO_DE_CATEGORIA_PADRE_INGRESO = [
-        nombre: 'nombre padre',
+        nombre: 'categoria padre',
         detalle: 'detalle detalle de padre',
         tipo: TipoAsiento.INGRESO
     ]

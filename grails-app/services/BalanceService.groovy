@@ -95,7 +95,9 @@ class BalanceService {
             }
             if (nombreCategoria) {
                 categoria {
-                    eq 'tipo', tipo
+                    if (tipo != TipoAsiento.NINGUNO) {
+                        eq 'tipo', tipo
+                    }
                     like 'nombre', nombreCategoria.toLowerCase()
                 }
             }

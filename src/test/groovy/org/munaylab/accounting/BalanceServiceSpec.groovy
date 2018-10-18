@@ -201,13 +201,32 @@ class BalanceServiceSpec extends SpecificationTestBuilder
         crearAsientoConDatos(EJEMPLO_DE_EGRESO, EJEMPLO_DE_CATEGORIA_EGRESO).save(flush: true)
         crearAsientoConDatos(EJEMPLO_DE_INGRESO, EJEMPLO_DE_CATEGORIA_INGRESO).save(flush: true)
         expect:
-        service.obtenerAsientos(entity, tipo).size() == total
+        service.obtenerAsientos(entity, tipo, categoria).size() == total
         where:
-        tipo                | entity | total
-        TipoAsiento.EGRESO  | 1      | 1
-        TipoAsiento.INGRESO | 1      | 1
-        TipoAsiento.NINGUNO | 1      | 2
-        TipoAsiento.NINGUNO | 0      | 0
+        tipo                | entity | total | categoria
+        TipoAsiento.EGRESO  | 1      | 1     | null
+        TipoAsiento.EGRESO  | 1      | 0     | 'cat. inexistente'
+        TipoAsiento.INGRESO | 1      | 1     | null
+        TipoAsiento.INGRESO | 1      | 0     | 'cat. inexistente'
+        TipoAsiento.NINGUNO | 1      | 2     | null
+        TipoAsiento.NINGUNO | 0      | 0     | null
+        TipoAsiento.NINGUNO | 1      | 1     | EJEMPLO_DE_CATEGORIA_EGRESO.nombre
+        TipoAsiento.NINGUNO | 1      | 1     | EJEMPLO_DE_CATEGORIA_INGRESO.nombre
+    }
+
+    void 'obtener todos los asientos por fecha'() {
+        given:
+        crearAsientoConDatos(EJEMPLO_DE_EGRESO + [fecha: new Date() -2], EJEMPLO_DE_CATEGORIA_EGRESO).save(flush: true)
+        crearAsientoConDatos(EJEMPLO_DE_INGRESO + [fecha: new Date() -2], EJEMPLO_DE_CATEGORIA_INGRESO).save(flush: true)
+        expect:
+        service.obtenerAsientos(1, TipoAsiento.NINGUNO, null, desde, hasta).size() == total
+        where:
+        total | desde         | hasta
+        0     | new Date() -1 | new Date()
+        2     | new Date() -2 | new Date()
+        2     | new Date() -3 | new Date()
+        0     | new Date() -3 | new Date() -2
+        0     | new Date() -4 | new Date() -2
     }
 
     // void crearAsientosConFechas(org, _categoria, tipoAsiento, value) {
