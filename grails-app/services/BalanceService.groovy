@@ -107,40 +107,36 @@ class BalanceService {
         }
     }
 
-    // @Transactional(readOnly = true)
-    // def obtenerEgresos(Organizacion org, String nombreCategoria = null,
-    //         Date desde = null, Date hasta = null) {
-    //     obtenerAsientos(org, TipoAsiento.EGRESO, nombreCategoria, desde, hasta)
-    // }
-    // @Transactional(readOnly = true)
-    // def obtenerEgresosEntre(Organizacion org, Date desde, Date hasta) {
-    //     obtenerEgresos(org, null, desde, hasta)
-    // }
-    // @Transactional(readOnly = true)
-    // def obtenerEgresosDeCategoriaEntre(Organizacion org, String categoria,
-    //         Date desde, Date hasta) {
-    //     obtenerEgresos(org, categoria, desde, hasta)
-    // }
-    //
-    // @Transactional(readOnly = true)
-    // def obtenerIngresos(Organizacion org, String nombreCategoria = null,
-    //         Date desde = null, Date hasta = null) {
-    //     obtenerAsientos(org, TipoAsiento.INGRESO, nombreCategoria, desde, hasta)
-    // }
-    // @Transactional(readOnly = true)
-    // def obtenerIngresosEntre(Organizacion org, Date desde, Date hasta) {
-    //     obtenerIngresos(org, null, desde, hasta)
-    // }
-    // @Transactional(readOnly = true)
-    // def obtenerIngresosDeCategoriaEntre(Organizacion org, String categoria,
-    //         Date desde, Date hasta) {
-    //     obtenerIngresos(org, categoria, desde, hasta)
-    // }
-    // @Transactional(readOnly = true)
-    // def obtenerUltimosMovimientos(Organizacion org) {
-    //     Date desde = new Date() - 14
-    //     obtenerAsientos(org, TipoAsiento.NINGUNO, null, desde, new Date())
-    // }
+    @Transactional(readOnly = true)
+    def obtenerEgresos(Long idEntity, String nombreCategoria = null, Date desde = null, Date hasta = null) {
+        obtenerAsientos(idEntity, TipoAsiento.EGRESO, nombreCategoria, desde, hasta)
+    }
+    @Transactional(readOnly = true)
+    def obtenerEgresosEntre(Long idEntity, Date desde, Date hasta) {
+        obtenerEgresos(idEntity, null, desde, hasta)
+    }
+    @Transactional(readOnly = true)
+    def obtenerEgresosDeCategoriaEntre(Long idEntity, String nombreCategoria, Date desde, Date hasta) {
+        obtenerEgresos(idEntity, nombreCategoria, desde, hasta)
+    }
+
+    @Transactional(readOnly = true)
+    def obtenerIngresos(Long idEntity, String nombreCategoria = null, Date desde = null, Date hasta = null) {
+        obtenerAsientos(idEntity, TipoAsiento.INGRESO, nombreCategoria, desde, hasta)
+    }
+    @Transactional(readOnly = true)
+    def obtenerIngresosEntre(Long idEntity, Date desde, Date hasta) {
+        obtenerIngresos(idEntity, null, desde, hasta)
+    }
+    @Transactional(readOnly = true)
+    def obtenerIngresosDeCategoriaEntre(Long idEntity, String categoria, Date desde, Date hasta) {
+        obtenerIngresos(idEntity, categoria, desde, hasta)
+    }
+
+    @Transactional(readOnly = true)
+    def obtenerUltimosMovimientos(Long idEntity, Date desde = new Date() -15) {
+        obtenerAsientos(idEntity, TipoAsiento.NINGUNO, null, desde, new Date())
+    }
 
     @Transactional(readOnly = true)
     public double calcularBalanceTotal(Long idEntity, Date desde = null, Date hasta = null) {
