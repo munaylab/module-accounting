@@ -59,9 +59,12 @@ class BalanceService {
         if (command.esNuevaCategoria) return crearNuevaCategoria(command)
 
         Categoria categoria = Categoria.get(command.id)
+
+        if (categoria.tipo != command.tipo)
+            throw new Exception('No se puede cambiar el tipo de un asiento!')
+
         categoria.nombre = command.nombre.toLowerCase()
         categoria.detalle = command.detalle
-        // TODO advertencia si cambia el tipo
         categoria.save()
         return categoria
     }
