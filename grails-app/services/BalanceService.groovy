@@ -84,26 +84,27 @@ class BalanceService {
         return categoria
     }
 
-    // @Transactional(readOnly = true)
-    // def obtenerAsientos(Organizacion org, TipoAsiento tipo, String nombreCategoria = null,
-    //         Date desde = null, Date hasta = null) {
-    //     Asiento.createCriteria().list {
-    //         eq 'organizacion', org
-    //         eq 'enabled', true
-    //         if (tipo != TipoAsiento.NONE) {
-    //             eq 'tipo', tipo
-    //         }
-    //         if (nombreCategoria) {
-    //             categoria {
-    //                 eq 'tipo', tipo
-    //                 like 'nombre', nombreCategoria.toLowerCase()
-    //             }
-    //         }
-    //         if (desde) {
-    //             between 'fecha', desde.clearTime(), hasta
-    //         }
-    //     }
-    // }
+    @Transactional(readOnly = true)
+    def obtenerAsientos(Long idEntity, TipoAsiento tipo,
+            String nombreCategoria = null, Date desde = null, Date hasta = new Date()) {
+        Asiento.createCriteria().list {
+            eq 'idEntity', idEntity
+            eq 'enabled', true
+            if (tipo != TipoAsiento.NINGUNO) {
+                eq 'tipo', tipo
+            }
+            if (nombreCategoria) {
+                categoria {
+                    eq 'tipo', tipo
+                    like 'nombre', nombreCategoria.toLowerCase()
+                }
+            }
+            if (desde) {
+                between 'fecha', desde.clearTime(), hasta
+            }
+        }
+    }
+
     // @Transactional(readOnly = true)
     // def obtenerEgresos(Organizacion org, String nombreCategoria = null,
     //         Date desde = null, Date hasta = null) {
@@ -136,7 +137,7 @@ class BalanceService {
     // @Transactional(readOnly = true)
     // def obtenerUltimosMovimientos(Organizacion org) {
     //     Date desde = new Date() - 14
-    //     obtenerAsientos(org, TipoAsiento.NONE, null, desde, new Date())
+    //     obtenerAsientos(org, TipoAsiento.NINGUNO, null, desde, new Date())
     // }
 
     @Transactional(readOnly = true)

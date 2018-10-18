@@ -196,6 +196,20 @@ class BalanceServiceSpec extends SpecificationTestBuilder
         categorias.first().subcategorias.size() == 5
     }
 
+    void 'obtener todos los asientos'() {
+        given:
+        crearAsientoConDatos(EJEMPLO_DE_EGRESO, EJEMPLO_DE_CATEGORIA_EGRESO).save(flush: true)
+        crearAsientoConDatos(EJEMPLO_DE_INGRESO, EJEMPLO_DE_CATEGORIA_INGRESO).save(flush: true)
+        expect:
+        service.obtenerAsientos(entity, tipo).size() == total
+        where:
+        tipo                | entity | total
+        TipoAsiento.EGRESO  | 1      | 1
+        TipoAsiento.INGRESO | 1      | 1
+        TipoAsiento.NINGUNO | 1      | 2
+        TipoAsiento.NINGUNO | 0      | 0
+    }
+
     // void crearAsientosConFechas(org, _categoria, tipoAsiento, value) {
     //     new Asiento().with {
     //         fecha           = value[1]
