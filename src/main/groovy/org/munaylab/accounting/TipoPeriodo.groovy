@@ -1,9 +1,19 @@
 package org.munaylab.accounting
 
-enum TipoFiltro {
+enum TipoPeriodo {
     SEMANAL,
     MENSUAL,
     ANUAL
+
+    boolean getSiEsSemanal() {
+        return this == SEMANAL
+    }
+    boolean getSiEsMensual() {
+        return this == MENSUAL
+    }
+    boolean getSiEsAnual() {
+        return this == ANUAL
+    }
 
     Date getFechaDesde() {
         use (groovy.time.TimeCategory) {

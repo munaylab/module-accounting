@@ -6,7 +6,7 @@ import org.munaylab.accounting.AsientoCommand
 import org.munaylab.accounting.Categoria
 import org.munaylab.accounting.CategoriaCommand
 import org.munaylab.accounting.TipoAsiento
-import org.munaylab.accounting.TipoFiltro
+import org.munaylab.accounting.TipoPeriodo
 import org.hibernate.transform.Transformers
 import grails.gorm.transactions.Transactional
 import grails.gorm.transactions.NotTransactional
@@ -162,33 +162,28 @@ class BalanceService {
         return totalIngreso - totalEgreso
     }
 
-    // //TODO testear
-    // @Transactional(readOnly = true)
-    // def obtenerBalancePorPeriodo(Organizacion org, TipoAsiento tipo, TipoFiltro filtro = TipoFiltro.ANUAL) {
-    //     def result = Asiento.createCriteria().list {
-    //         eq 'organizacion', org
-    //         eq 'tipo', tipo
-    //         eq 'enabled', true
-    //         between 'fecha', filtro.fechaDesde, new Date()
-    //         projections {
-    //             rowCount()
-    //             sum 'monto'
-    //             if (TipoFiltro.SEMANAL == filtro)
-    //                 groupProperty 'semana'
-    //             if (TipoFiltro.SEMANAL == filtro || TipoFiltro.MENSUAL == filtro)
-    //                 groupProperty 'mes'
-    //             groupProperty 'anio'
-    //         }
-    //         order 'anio', 'asc'
-    //         if (TipoFiltro.SEMANAL == filtro || TipoFiltro.MENSUAL == filtro)
-    //             order 'mes', 'asc'
-    //         if (TipoFiltro.SEMANAL == filtro)
-    //             order 'semana', 'asc'
-    //     }
-    //
-    //     parsearResultadoALista(result, tipo, filtro)
-    // }
-    //
+    @Transactional(readOnly = true)
+    List<Asiento> obtenerAsientosPorPeriodo(Long idEntity, TipoPeriodo periodo, TipoAsiento tipo = TipoAsiento.NINGUNO) {
+        return Asiento.createCriteria().list {
+            eq 'enabled', true
+            eq 'idEntity', idEntity
+            between 'fecha', periodo.fechaDesde, new Date()
+            if (tipo.siEsEgreso || tipo.siEsIngreso) eq 'tipo', tipo
+            projections {
+                rowCount 'id'
+                sum 'monto', 'monto'
+                groupProperty 'tipo', 'tipo'
+                groupProperty 'anio', 'anio'
+                if (periodo.siEsSemanal) groupProperty 'semana', 'semana'
+                if (periodo.siEsSemanal || periodo.siEsMensual) groupProperty 'mes', 'mes'
+            }
+            order 'anio', 'asc'
+            if (periodo.siEsSemanal || periodo.siEsMensual) order 'mes', 'asc'
+            if (periodo.siEsSemanal) order 'semana', 'asc'
+            setResultTransformer(Transformers.aliasToBean(Asiento.class))
+        }
+    }
+
     // //TODO testear
     // @NotTransactional
     // private List<Asiento> parsearResultadoALista(result, TipoAsiento tipo, TipoFiltro filtro) {

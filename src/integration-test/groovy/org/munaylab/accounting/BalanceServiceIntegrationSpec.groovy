@@ -77,4 +77,40 @@ class BalanceServiceIntegrationSpec extends SpecificationTestBuilder {
     private Date fecha(int dias) {
         return new Date() + dias
     }
+
+    void 'obtener asientos por periodos'() {
+        given:
+        Long idEntity = 1
+        def categoriaEgresos = new Categoria(EJEMPLO_DE_CATEGORIA_EGRESO).save()
+        def categoriaIngresos = new Categoria(EJEMPLO_DE_CATEGORIA_INGRESO).save()
+        and:
+        crearEgreso([categoria: categoriaEgresos, entity: idEntity, monto: 10.0, fecha: fechaEgreso]).save()
+        crearIngreso([categoria: categoriaIngresos, entity: idEntity, monto: 10.0, fecha: fechaIngreso]).save()
+        expect:
+        service.obtenerAsientosPorPeriodo(idEntity, filtro).size() == asientos
+        where:
+        fechaEgreso                 | fechaIngreso                | filtro             | asientos
+        calcularFecha([semana: -7]) | calcularFecha([semana: -3]) | TipoPeriodo.SEMANAL | 1
+        calcularFecha([semana: -1]) | calcularFecha([semana: -7]) | TipoPeriodo.SEMANAL | 1
+        calcularFecha([semana: -1]) | calcularFecha([semana: -1]) | TipoPeriodo.SEMANAL | 2
+        calcularFecha([semana: -1]) | calcularFecha([semana: -2]) | TipoPeriodo.SEMANAL | 2
+        calcularFecha([meses: -13]) | calcularFecha([meses: -10]) | TipoPeriodo.MENSUAL | 1
+        calcularFecha([meses: -11]) | calcularFecha([meses: -13]) | TipoPeriodo.MENSUAL | 1
+        calcularFecha([meses: -11]) | calcularFecha([meses: -11]) | TipoPeriodo.MENSUAL | 2
+        calcularFecha([meses: -11]) | calcularFecha([meses: -1])  | TipoPeriodo.MENSUAL | 2
+        calcularFecha([anios: -7])  | calcularFecha([anios: -1])  | TipoPeriodo.ANUAL   | 1
+        calcularFecha([anios: -1])  | calcularFecha([anios: -7])  | TipoPeriodo.ANUAL   | 1
+        calcularFecha([anios: -1])  | calcularFecha([anios: -1])  | TipoPeriodo.ANUAL   | 2
+        calcularFecha([anios: -1])  | calcularFecha([anios: -2])  | TipoPeriodo.ANUAL   | 2
+    }
+
+    private Date calcularFecha(periodo) {
+        Date date = new Date().clearTime()
+        use(groovy.time.TimeCategory) {
+            if (periodo.semana)  date = date + periodo.semana.weeks
+            if (periodo.meses)  date = date + periodo.meses.months
+            if (periodo.anios)  date = date + periodo.anios.years
+        }
+        return date
+    }
 }
