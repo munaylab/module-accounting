@@ -7,6 +7,7 @@ import org.munaylab.accounting.Categoria
 import org.munaylab.accounting.CategoriaCommand
 import org.munaylab.accounting.TipoAsiento
 import org.munaylab.accounting.TipoFiltro
+import org.hibernate.transform.Transformers
 import grails.gorm.transactions.Transactional
 import grails.gorm.transactions.NotTransactional
 
@@ -147,27 +148,18 @@ class BalanceService {
                 between 'fecha', desde.clearTime(), hasta
             }
             projections {
-                sum 'monto'
-                groupProperty 'tipo'
+                sum 'monto', 'monto'
+                groupProperty 'tipo', 'tipo'
             }
             order 'tipo', 'asc'
+            setResultTransformer(Transformers.aliasToBean(Asiento.class))
         }
 
         if (result.empty) return 0
-        if (siElUnicoRegistroEsUnEgreso(result)) return -result.first()[0]
-        if (siElUnicoRegistroEsUnIngreso(result)) return result.first()[0]
 
-        int totalEgreso = result.first()[0]
-        int totalIngreso = result.last()[0]
-        return (totalIngreso - totalEgreso)
-    }
-
-    private boolean siElUnicoRegistroEsUnEgreso(result) {
-        return result.size() == 1 && result.first()[1] == TipoAsiento.EGRESO
-    }
-
-    private boolean siElUnicoRegistroEsUnIngreso(result) {
-        return result.size() == 1 && result.first()[1] == TipoAsiento.INGRESO
+        int totalEgreso = result.find { it.tipo == TipoAsiento.EGRESO }?.monto ?: 0
+        int totalIngreso = result.find { it.tipo == TipoAsiento.INGRESO }?.monto ?: 0
+        return totalIngreso - totalEgreso
     }
 
     // //TODO testear
